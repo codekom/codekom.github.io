@@ -1,0 +1,224 @@
+	<html>
+	<head></head>
+	<body>
+	    <h3>Huffman Tree Visualizer</h3>
+	    <form name="InputForm" action="" method="GET">
+	        Enter your text here : <br>
+	    	<textarea name="userInput" cols="40" rows=7" value=""></textarea><br><br>
+	    	<input type="button" name="btn" value="Generate Tree" onClick="inputFromUser(this.form)">
+	    </form>
+	    <br><br>
+	    <svg width="1000" height="1000" id="tree"></svg>
+		<script>
+			class Node{
+				constructor(ch,freq,left=null,right=null){
+					this.ch = ch;
+					this.freq = freq;
+					this.left = left;
+					this.right = right;
+				}
+			}
+			class MinHeap{
+				constructor(size,nodeArr){
+					this.size = size;
+					this.nodeArr = nodeArr;
+				}
+			}
+			function createMinHeap(alpha,freq,size){
+					let nodes = [];
+					for(let i=0;i<size;i++){
+						let x = new Node(alpha[i],freq[i]);
+						nodes.push(x);
+					}
+					let tmp = new MinHeap(size,nodes);
+					buildHeap(tmp);
+					return tmp;
+			}
+			function buildHeap(heap){
+				let n = heap.size-1;
+				for(let i=Math.floor(n/2)-1;i>=0;i--){
+					minHeapify(heap,i);
+				}
+			}
+			function minHeapify(heap,i){
+				let l = 2*i + 1;
+				let r = 2*i + 2;
+				let smallest = i;
+				if(l<heap.size && heap.nodeArr[l].freq < heap.nodeArr[smallest].freq)
+					smallest = l;
+				if(r<heap.size && heap.nodeArr[r].freq < heap.nodeArr[smallest].freq)
+					smallest = r;
+				if(smallest!=i){
+					let nd = heap.nodeArr[i];
+					heap.nodeArr[i] = heap.nodeArr[smallest];
+					heap.nodeArr[smallest] = nd;
+					minHeapify(heap,smallest);
+				}
+			}
+			function extractMinimum(heap){
+				let node = heap.nodeArr[0];
+				heap.nodeArr[0] = heap.nodeArr[heap.size-1];
+				heap.nodeArr.pop();
+				heap.size--;
+				minHeapify(heap,0);
+				return node;
+			}
+			function insertNodeInHeap(heap,node){
+				heap.size++;
+				let i = heap.size-1;
+				heap.nodeArr.push(node);
+				while(i && node.freq < heap.nodeArr[Math.floor((i-1)/2)].freq){
+					heap.nodeArr[i] = heap.nodeArr[Math.floor((i-1)/2)];
+					i = Math.floor((i-1)/2);
+				}
+				heap.nodeArr[i] = node;
+			}
+			function buildHuffmanTree(alpha,freq,size){
+				let heap = createMinHeap(arr,freq,size);
+				//console.log(heap);
+				while(heap.size!=1){
+					let left = extractMinimum(heap);
+					let right = extractMinimum(heap);
+					let node = new Node('#',left.freq+right.freq);
+					node.left = left;
+					node.right = right;
+					//console.log(node);
+					insertNodeInHeap(heap,node);
+				}
+				return extractMinimum(heap);
+			}
+			function generateCode(root,codeArr){
+				if(root.left){
+					generateCode(root.left,codeArr+"0");
+				}
+				if(root.right){
+					generateCode(root.right,codeArr+"1");
+				}
+				if(root.left == null && root.right == null){
+					huffmanCodes[root.ch] = codeArr;
+				}
+			}
+			function countNodes(root){
+				let c=1;
+				if(root==null)
+					return 0;
+				else{
+					c = c + countNodes(root.left);
+					c = c + countNodes(root.right);
+					return c;
+				}
+			}
+			function heightOfTree(root){
+				if(root==null)
+					return 0;
+				else{
+					let lh = heightOfTree(root.left);
+					let rh = heightOfTree(root.right);
+					if(lh>rh)
+						return (1+lh);
+					return (1+rh);
+				}
+			}
+
+			//var arr = ['a', 'b', 'c', 'd', 'e', 'f'];
+	        //var freq = [5, 9, 12, 13, 16, 45 ];
+	        //var size = 6;
+	        var arr = [];
+	        var freq = [];
+	        var size = 0;
+	        var huffmanCodes = {};
+	        var codeArr = "";
+
+	        function inputFromUser(form){
+	        	arr = [];
+	            freq = [];
+	            size = 0;
+	            huffmanCodes = {};
+	            codeArr = "";
+
+				let txt = form.userInput.value;
+				for(let i=0;i<txt.length;i++){
+					arr.push(txt[i]);
+				}
+				arr = arr.filter((x, i, a) => a.indexOf(x) == i)
+				console.log(arr);
+				let c=0;
+				for(let i=0;i<arr.length;i++){
+					c=0;
+					for(let j=0;j<txt.length;j++){
+						if(arr[i]==txt[j])
+							c++;
+					}
+					freq.push(c);
+				}
+				size = arr.length;
+				console.log(arr);
+				console.log(freq);
+			
+		        var treeRootNode = buildHuffmanTree(arr,freq,size);
+		        generateCode(treeRootNode,codeArr);
+		        console.log(treeRootNode);
+		        //console.log(huffmanCodes);
+		        var numOfNodes = countNodes(treeRootNode);
+		        var levels = heightOfTree(treeRootNode)-1;
+		        // console.log(numOfNodes);
+		        // console.log('Levels = '+levels);
+		        let svgTree = '';
+		        let svgTree2 = '';
+		        let dy = Math.floor(600/(levels+1));
+		        
+		        var q = [];
+		        var qarr = [];
+		        var textInCircle = [];
+		        var nobj = {node:treeRootNode,idx:0};
+		        q.push(nobj);
+		        while(q.length){
+		        	let x = q[0].node;
+		        	let xi = q[0].idx;
+		        	qarr.push(xi);
+		        	textInCircle.push({d:x.ch,f:x.freq,p:xi});
+		        	q.shift();
+		        	if(x.left!=null)
+		        		q.push({node:x.left,idx:2*xi+1});
+		        	if(x.right!=null)
+		        		q.push({node:x.right,idx:2*xi+2});
+		        }
+		        //console.log(textInCircle);
+		        let parr = [];
+		        let ri = 0,rd=0;
+		    	for(let i=0,w=dy;i<=levels;i++,w+=dy){
+		        	let nodesAtLeveli = Math.pow(2,i);
+		        	let dx = Math.floor(800/(1+nodesAtLeveli));
+		        	for(let j=dx,k=0,p=w;k<nodesAtLeveli;j+=dx,k++,ri++){
+		        		if(qarr.includes(ri)){
+		        			console.log(ri);
+		        			svgTree += '<circle cx=' + j + ' cy=' + p + ' r="20" stroke="black" stroke-width="1" fill="yellow" />';
+		        			svgTree += '<text x=' + (j-15) + ' y=' + (p+5) +' fill="black">'+ textInCircle[rd].d + ':' + textInCircle[rd].f +'</text>';
+		        			rd++;
+		        			//console.log(j + ',' + p + ',' + textInCircle[rd].d);
+		        			parr.push({x:j,y:p,idx:ri});
+		        		}
+		        	}
+		        	//console.log("\n");
+		        }
+		        for(let a=0;a<parr.length;a++){
+		        	let idx1 = 2*parr[a].idx+1;
+		        	let idx2 = 2*parr[a].idx+2;
+		        	for(let b=0;b<parr.length;b++){
+		        		if(parr[b].idx == idx1){
+		        			svgTree2 += '<line x1=' + parr[a].x + ' y1=' + parr[a].y + ' x2='+ parr[b].x + ' y2=' + parr[b].y + ' style="stroke:black;stroke-width:1" />';
+		        			svgTree2 += '<text x=' + ((parr[a].x+parr[b].x)/2-10) + ' y=' + (parr[a].y+parr[b].y)/2 +' fill="black">0</text>';
+		        		}
+		        		if(parr[b].idx == idx2){
+		        			svgTree2 += '<line x1=' + parr[a].x + ' y1=' + parr[a].y + ' x2='+ parr[b].x + ' y2=' + parr[b].y + ' style="stroke:black;stroke-width:1" />';
+		        			svgTree2 += '<text x=' + (parr[a].x+parr[b].x)/2 + ' y=' + (parr[a].y+parr[b].y)/2 +' fill="black">1</text>';
+		        		}
+		        	}
+		        }
+			    //console.log(parr);
+		        //console.log(svgTree);
+		        document.getElementById('tree').innerHTML = svgTree2+svgTree;
+		    }
+		</script>
+	</body>
+	</html>
